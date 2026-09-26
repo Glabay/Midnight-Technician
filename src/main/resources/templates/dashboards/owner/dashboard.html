@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Owner Dashboard - Midnight Technician</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/dashboard.css" rel="stylesheet">
+    <link href="/css/header.css" rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div th:replace="~{fragments/header::header}"></div>
+
+<div class="dashboard-header">
+    <div class="container text-center">
+        <h1 class="welcome-title">Owner Dashboard</h1>
+    </div>
+    <div class="container text-center">
+        <h4 th:text="${monthStartLabel + ' - ' + monthEndLabel}">Nov 01, 2025 - Nov 30, 2025</h4>
+    </div>
+    <hr/>
+    <div class="container">
+        <div class="row g-3 text-center">
+            <div class="col-6 col-md-3">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="text-muted small">Total</div>
+                        <div class="h4 mb-0" th:text="${revenueSummary != null ? revenueSummary.currency() : '$'} + ' ' + (${revenueSummary != null ? revenueSummary.totalSum() : '0.00'})">$ 0.00</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="text-muted small">Subtotal</div>
+                        <div class="h4 mb-0" th:text="${revenueSummary != null ? revenueSummary.currency() : '$'} + ' ' + (${revenueSummary != null ? revenueSummary.subtotalSum() : '0.00'})">$ 0.00</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="text-muted small">Tax</div>
+                        <div class="h4 mb-0" th:text="${revenueSummary != null ? revenueSummary.currency() : '$'} + ' ' + (${revenueSummary != null ? revenueSummary.taxSum() : '0.00'})">$ 0.00</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="text-muted small">Invoices</div>
+                        <div class="h4 mb-0" th:text="${revenueSummary != null ? revenueSummary.invoiceCount() : 0}">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Revenue Chart -->
+<div class="container dashboard-container">
+    <section class="mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Revenue by Day (Paid)</span>
+            </div>
+            <div class="card-body">
+                <canvas id="revenueChart" height="90"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <!-- Outstanding (Unpaid) Summary -->
+    <section class="mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Outstanding (Unpaid) — This Month</span>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 text-center">
+                    <div class="col-6 col-md-3">
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <div class="text-muted small">Total</div>
+                                <div class="h5 mb-0" th:text="${unpaidSummary != null ? unpaidSummary.currency() : '$'} + ' ' + (${unpaidSummary != null ? unpaidSummary.totalSum() : '0.00'})">$ 0.00</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <div class="text-muted small">Subtotal</div>
+                                <div class="h5 mb-0" th:text="${unpaidSummary != null ? unpaidSummary.currency() : '$'} + ' ' + (${unpaidSummary != null ? unpaidSummary.subtotalSum() : '0.00'})">$ 0.00</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <div class="text-muted small">Tax</div>
+                                <div class="h5 mb-0" th:text="${unpaidSummary != null ? unpaidSummary.currency() : '$'} + ' ' + (${unpaidSummary != null ? unpaidSummary.taxSum() : '0.00'})">$ 0.00</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <div class="text-muted small">Invoices</div>
+                                <div class="h5 mb-0" th:text="${unpaidSummary != null ? unpaidSummary.invoiceCount() : 0}">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Unpaid Invoices Table -->
+    <section class="mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Unpaid Invoices</span>
+            </div>
+            <div class="card-body table-responsive">
+                <div th:if="${unpaidInvoices == null || #lists.isEmpty(unpaidInvoices)}" class="text-center text-muted py-3">
+                    No unpaid invoices for this month. 🎉
+                </div>
+                <table th:if="${unpaidInvoices != null && !#lists.isEmpty(unpaidInvoices)}" class="table table-sm table-striped align-middle">
+                    <thead class="table-light">
+                    <tr>
+                        <th style="width: 12%">Invoice #</th>
+                        <th style="width: 22%">Customer</th>
+                        <th style="width: 14%">Created</th>
+                        <th style="width: 12%">Subtotal</th>
+                        <th style="width: 10%">Tax</th>
+                        <th style="width: 12%">Total</th>
+                        <th style="width: 8%">Status</th>
+                        <th style="width: 10%">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="inv : ${unpaidInvoices}">
+                        <td th:text="${inv.invoiceNumber}">MT-20251101-123</td>
+                        <td>
+                            <div class="small" th:text="${inv.customerEmail}">customer@example.com</div>
+                            <div class="text-muted" th:text="${inv.ticketId}">TICKET-123</div>
+                        </td>
+                        <td th:text="${inv.createdAt != null ? #dates.format(T(java.util.Date).from(inv.createdAt), 'MMM dd, yyyy') : '--'}">Nov 01, 2025</td>
+                        <td th:text="${unpaidSummary != null ? unpaidSummary.currency() : '$'} + ' ' + (${inv.subtotal} ?: '0.00')">$ 0.00</td>
+                        <td th:text="${unpaidSummary != null ? unpaidSummary.currency() : '$'} + ' ' + (${inv.tax} ?: '0.00')">$ 0.00</td>
+                        <td th:text="${unpaidSummary != null ? unpaidSummary.currency() : '$'} + ' ' + (${inv.total} ?: '0.00')">$ 0.00</td>
+                        <td>
+                            <span class="badge bg-warning text-dark" th:text="${inv.status}">SENT</span>
+                        </td>
+                        <td>
+                            <a class="btn btn-sm btn-outline-primary" th:href="${inv.viewUrl}" target="_blank">View</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Today + Week Schedule -->
+    <section class="mb-4">
+        <div class="row g-3">
+            <div class="col-12 col-lg-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header">Today's Shifts</div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush" th:if="${employees != null}">
+                            <li class="list-group-item d-flex justify-content-between align-items-center"
+                                th:each="emp : ${employees}"
+                                th:if="${todayScheduleMap.containsKey(emp.employeeId)}">
+                                <span th:text="${emp.firstName + ' ' + emp.lastName}">John Doe</span>
+                                <span class="badge bg-primary rounded-pill"
+                                      th:text="${todayScheduleMap.get(emp.employeeId).startTime()} + ' - ' + ${todayScheduleMap.get(emp.employeeId).endTime()}">09:00 - 17:00</span>
+                            </li>
+                            <li class="list-group-item" th:if="${todayScheduleMap.isEmpty()}">No employees scheduled today</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-8">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>This Week's Schedule</span>
+                        <a class="btn btn-sm btn-outline-secondary" href="/dashboard/admin/schedules">View Full Schedule</a>
+                    </div>
+                    <div class="card-body table-responsive">
+                        <table class="table table-sm table-bordered align-middle">
+                            <thead class="table-light">
+                            <tr>
+                                <th>Employee</th>
+                                <th>Mon</th>
+                                <th>Tue</th>
+                                <th>Wed</th>
+                                <th>Thu</th>
+                                <th>Fri</th>
+                                <th>Sat</th>
+                                <th>Sun</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="emp : ${employees}">
+                                <td th:text="${emp.firstName + ' ' + emp.lastName}">John Doe</td>
+                                <td th:text="${weekScheduleMap.get(emp.employeeId + '_MONDAY') != null ? weekScheduleMap.get(emp.employeeId + '_MONDAY').startTime() + '-' + weekScheduleMap.get(emp.employeeId + '_MONDAY').endTime() : '--'}">--</td>
+                                <td th:text="${weekScheduleMap.get(emp.employeeId + '_TUESDAY') != null ? weekScheduleMap.get(emp.employeeId + '_TUESDAY').startTime() + '-' + weekScheduleMap.get(emp.employeeId + '_TUESDAY').endTime() : '--'}">--</td>
+                                <td th:text="${weekScheduleMap.get(emp.employeeId + '_WEDNESDAY') != null ? weekScheduleMap.get(emp.employeeId + '_WEDNESDAY').startTime() + '-' + weekScheduleMap.get(emp.employeeId + '_WEDNESDAY').endTime() : '--'}">--</td>
+                                <td th:text="${weekScheduleMap.get(emp.employeeId + '_THURSDAY') != null ? weekScheduleMap.get(emp.employeeId + '_THURSDAY').startTime() + '-' + weekScheduleMap.get(emp.employeeId + '_THURSDAY').endTime() : '--'}">--</td>
+                                <td th:text="${weekScheduleMap.get(emp.employeeId + '_FRIDAY') != null ? weekScheduleMap.get(emp.employeeId + '_FRIDAY').startTime() + '-' + weekScheduleMap.get(emp.employeeId + '_FRIDAY').endTime() : '--'}">--</td>
+                                <td th:text="${weekScheduleMap.get(emp.employeeId + '_SATURDAY') != null ? weekScheduleMap.get(emp.employeeId + '_SATURDAY').startTime() + '-' + weekScheduleMap.get(emp.employeeId + '_SATURDAY').endTime() : '--'}">--</td>
+                                <td th:text="${weekScheduleMap.get(emp.employeeId + '_SUNDAY') != null ? weekScheduleMap.get(emp.employeeId + '_SUNDAY').startTime() + '-' + weekScheduleMap.get(emp.employeeId + '_SUNDAY').endTime() : '--'}">--</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Management -->
+    <section class="mb-5">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Services</span>
+                <div>
+                    <button class="btn btn-sm btn-primary" onclick="addNewServiceRow()">Add New Service</button>
+                    <button class="btn btn-sm btn-success" onclick="saveChanges()">Save Changes</button>
+                </div>
+            </div>
+            <div class="card-body table-responsive">
+                <table id="servicesTable" class="table table-striped align-middle">
+                    <thead class="table-light">
+                    <tr>
+                        <th style="width: 10%">ID</th>
+                        <th style="width: 20%">Name</th>
+                        <th style="width: 35%">Description</th>
+                        <th style="width: 15%">Price</th>
+                        <th style="width: 10%">Fixed Rate</th>
+                        <th style="width: 10%">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="svc : ${services}"
+                        th:attr="data-id=${svc.serviceId}">
+                        <td th:text="${svc.serviceId}"></td>
+                        <td class="svc-name" th:text="${svc.serviceName}"></td>
+                        <td class="svc-desc" th:text="${svc.serviceDescription}"></td>
+                        <td class="svc-price" th:text="${svc.servicePrice}"></td>
+                        <td class="svc-fixed" th:text="${svc.fixedRate} ? 'Yes' : 'No'"></td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary" onclick="editRow(this)">Edit</button>
+                                <button class="btn btn-outline-danger" onclick="markDelete(this)">Delete</button>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script th:inline="javascript">
+    // Revenue chart data
+    const labels = /*[[${dailyLabels}]]*/ [];
+    const totals = /*[[${dailyTotals}]]*/ [];
+
+    const ctx = document.getElementById('revenueChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Paid Revenue',
+                    data: totals,
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    }
+
+    function addNewServiceRow() {
+        const tbody = document.querySelector('#servicesTable tbody');
+        const tr = document.createElement('tr');
+        tr.dataset.new = 'true';
+        tr.innerHTML = `
+            <td>—</td>
+            <td class="svc-name"><input class="form-control form-control-sm" placeholder="Name"/></td>
+            <td class="svc-desc"><input class="form-control form-control-sm" placeholder="Description"/></td>
+            <td class="svc-price"><input class="form-control form-control-sm" type="number" step="0.01" min="0" placeholder="0.00"/></td>
+            <td class="svc-fixed">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox"/>
+                </div>
+            </td>
+            <td>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-secondary" onclick="cancelEdit(this)">Cancel</button>
+                </div>
+            </td>
+        `;
+        tbody.prepend(tr);
+    }
+
+    function editRow(btn) {
+        const tr = btn.closest('tr');
+    
+        if (tr.dataset.editing === 'true') return;
+        tr.dataset.editing = 'true';
+
+        const nameCell = tr.querySelector('.svc-name');
+        const descCell = tr.querySelector('.svc-desc');
+        const priceCell = tr.querySelector('.svc-price');
+        const fixedCell = tr.querySelector('.svc-fixed');
+
+        const name = nameCell.textContent.trim();
+        const desc = descCell.textContent.trim();
+        const price = priceCell.textContent.trim();
+        const fixed = fixedCell.textContent.trim().toLowerCase() === 'yes';
+
+        nameCell.innerHTML = `<input class="form-control form-control-sm" value="${name}"/>`;
+        descCell.innerHTML = `<input class="form-control form-control-sm" value="${desc}"/>`;
+        priceCell.innerHTML = `<input class="form-control form-control-sm" type="number" step="0.01" min="0" value="${price}"/>`;
+        fixedCell.innerHTML = `<div class="form-check form-switch"><input class="form-check-input" type="checkbox" ${fixed ? 'checked' : ''}/></div>`;
+
+        tr.dataset.edited = 'true';
+        btn.textContent = 'Editing';
+        btn.disabled = true;
+    }
+
+    function cancelEdit(btn) {
+        const tr = btn.closest('tr');
+        tr.remove();
+    }
+
+    function markDelete(btn) {
+        const tr = btn.closest('tr');
+        tr.dataset.action = 'delete';
+        tr.classList.add('table-danger');
+    }
+
+    function getRowPayload(tr) {
+        const id = tr.dataset.id ? parseInt(tr.dataset.id) : null;
+        const nameEl = tr.querySelector('.svc-name input');
+        const descEl = tr.querySelector('.svc-desc input');
+        const priceEl = tr.querySelector('.svc-price input');
+        const fixedEl = tr.querySelector('.svc-fixed input[type="checkbox"]');
+        return {
+            serviceId: id,
+            serviceName: nameEl ? nameEl.value.trim() : tr.querySelector('.svc-name').textContent.trim(),
+            serviceDescription: descEl ? descEl.value.trim() : tr.querySelector('.svc-desc').textContent.trim(),
+            servicePrice: priceEl ? parseFloat(priceEl.value || '0') : parseFloat(tr.querySelector('.svc-price').textContent.trim() || '0'),
+            fixedRate: fixedEl ? !!fixedEl.checked : (tr.querySelector('.svc-fixed').textContent.trim().toLowerCase() === 'yes')
+        };
+    }
+
+    async function saveChanges() {
+        const rows = Array.from(document.querySelectorAll('#servicesTable tbody tr'));
+        for (const tr of rows) {
+            try {
+                if (tr.dataset.action === 'delete') {
+                    const id = tr.dataset.id;
+                    if (id) {
+                        const resp = await csrfFetch(`/api/owner/services/${id}`, { method: 'DELETE' });
+                        if (!resp.ok) throw new Error('Delete failed');
+                    }
+                    continue;
+                }
+
+                if (tr.dataset.new === 'true') {
+                    const payload = getRowPayload(tr);
+                    const resp = await csrfJson('/api/owner/services', { method: 'POST', body: payload });
+                    if (!resp.ok) throw new Error('Create failed');
+                    continue;
+                }
+
+                if (tr.dataset.edited === 'true') {
+                    const id = tr.dataset.id;
+                    if (!id) continue;
+                    const payload = getRowPayload(tr);
+                    const resp = await csrfJson(`/api/owner/services/${id}`, { method: 'PUT', body: payload });
+                    if (!resp.ok) throw new Error('Update failed');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Failed to apply changes: ' + e);
+                return;
+            }
+        }
+        // Reload to refresh data
+        window.location.reload();
+    }
+</script>
+
+</body>
+</html>
