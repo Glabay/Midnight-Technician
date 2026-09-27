@@ -14,6 +14,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
@@ -48,7 +49,13 @@ public class WebSecurityConfig implements WebMvcConfigurer {
         return http.sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
-            .csrf(AbstractHttpConfigurer::disable)
+            .csrf(csrf -> csrf
+                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                .ignoringRequestMatchers(
+                    "/api/**",
+                    "/auth/logout"
+                )
+            )
             .authorizeHttpRequests(request -> request
                 .requestMatchers(HttpMethod.GET,
                     "/css/**",
@@ -65,12 +72,6 @@ public class WebSecurityConfig implements WebMvcConfigurer {
                     "/error",
                     "/auth/**"
                 ).permitAll()
-                .requestMatchers(
-                    "/dashboard/**"
-                ).hasRole("USER")
-                .requestMatchers(
-                    "/api/**"
-                ).authenticated()
                 .requestMatchers("/dashboard/**").hasRole("USER")
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().authenticated()
