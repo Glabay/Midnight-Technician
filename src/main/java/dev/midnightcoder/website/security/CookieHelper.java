@@ -85,6 +85,9 @@ public class CookieHelper {
     }
 
     public Optional<String> getCookie(HttpServletRequest request, String name) {
+        if (request.getCookies() == null)
+            return Optional.empty();
+
         return Arrays.stream(request.getCookies())
             .filter(c -> name.equals(c.getName()))
             .map(Cookie::getValue)
