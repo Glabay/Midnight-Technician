@@ -3,7 +3,7 @@ package dev.midnightcoder.identity.profile.internal;
 import dev.midnightcoder.identity.IUserDetailsService;
 import dev.midnightcoder.identity.profile.IUserProfileService;
 import dev.midnightcoder.common.dto.UserProfileDto;
-import dev.midnightcoder.website.registrar.RegistrationRequest;
+import dev.midnightcoder.identity.profile.RegisterUserProfileRequest;
 import org.springframework.stereotype.Service;
 
 /**
@@ -27,7 +27,7 @@ public class UserProfileService implements IUserProfileService {
     }
 
     @Override
-    public UserProfileDto registerUserProfile(RegistrationRequest request) {
+    public UserProfileDto registerUserProfile(RegisterUserProfileRequest request) {
         var user = userDetailsService.createUser(request.email(), request.password());
         var profile = new UserProfile();
             profile.setUserId(user.getUuid());

@@ -3,6 +3,7 @@ package dev.midnightcoder.website.registrar.internal;
 import dev.midnightcoder.common.nto.RegistrationCreationEvent;
 import dev.midnightcoder.identity.IUserDetailsService;
 import dev.midnightcoder.identity.profile.IUserProfileService;
+import dev.midnightcoder.identity.profile.RegisterUserProfileRequest;
 import dev.midnightcoder.website.registrar.RegistrationRequest;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -34,7 +35,13 @@ public class Registrar {
         ) return RegistrationStatus.FAILED;
 
         log.info("Registering user profile for email: {}", request.email());
-        var profile = profileService.registerUserProfile(request);
+        var profile = profileService.registerUserProfile(new RegisterUserProfileRequest(
+            request.firstName(),
+            request.lastName(),
+            request.contactNumber(),
+            request.email(),
+            request.password()
+        ));
         if (profile == null) {
             log.error("Failed to register user profile for email: {}", request.email());
             return RegistrationStatus.FAILED;
