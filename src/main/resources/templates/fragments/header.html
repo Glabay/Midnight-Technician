@@ -31,8 +31,8 @@
                     </form>
                 </div>
                 <div th:unless="${#authorization.expression('isAuthenticated()')}">
-                    <a class="btn btn-custom btn-secondary-custom" href="#" th:href="@{/auth/register}">Register</a>
-                    <a class="btn btn-custom" href="#" th:href="@{/auth/login}">Login</a>
+                    <a class="btn btn-custom btn-secondary-custom" href="#" th:href="@{/register}">Register</a>
+                    <a class="btn btn-custom" href="#" th:href="@{/login}">Login</a>
                 </div>
             </div>
         </div>

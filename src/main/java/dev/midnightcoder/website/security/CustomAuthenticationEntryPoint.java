@@ -38,6 +38,6 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
             response.getWriter().write("{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}");
         }
         else
-            response.sendRedirect("/auth/login");
+            response.sendRedirect("/login");
     }
 }

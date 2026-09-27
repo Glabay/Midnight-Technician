@@ -1,7 +1,7 @@
 // CSRF helper for same-origin fetch requests with Spring Security's CookieCsrfTokenRepository
 // - Reads XSRF-TOKEN cookie and attaches X-XSRF-TOKEN header on state-changing requests
 // - Exposes window.csrfFetch and window.csrfJson convenience functions
-// - Optional redirect to /auth/login when a 401 is received (set { redirectOn401: true })
+// - Optional redirect to /login when a 401 is received (set { redirectOn401: true })
 (function() {
   function getCookie(name) {
     const value = `; ${document.cookie}`;
@@ -52,7 +52,7 @@
 
     const resp = await originalFetch(url, opts);
     if (opts.redirectOn401 && resp.status === 401) {
-      window.location.assign('/auth/login');
+      window.location.assign('/login');
       return resp; // In case navigation is blocked
     }
     return resp;
