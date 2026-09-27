@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author Glabay | The Midnight Coder
@@ -26,6 +27,7 @@ public class Registrar {
     private final IUserProfileService profileService;
     private final ApplicationEventPublisher eventPublisher;
 
+    @Transactional
     public RegistrationStatus registerUser(RegistrationRequest request, String ipAddress) {
         if (userService.userExists(request.email()))
             return RegistrationStatus.ALREADY_EXISTS;
