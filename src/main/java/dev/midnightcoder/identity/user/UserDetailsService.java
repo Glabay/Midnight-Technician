@@ -1,9 +1,9 @@
 package dev.midnightcoder.identity.user;
 
 import dev.midnightcoder.identity.IUserDetailsService;
+import dev.midnightcoder.identity.IUserRoleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -20,7 +20,7 @@ import java.util.Optional;
 public class UserDetailsService implements IUserDetailsService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final UserRepository repository;
-
+    private final IUserRoleService userRoleService;
 
     @Override
     public boolean userExists(String username) {
@@ -37,7 +37,10 @@ public class UserDetailsService implements IUserDetailsService {
         var user = new User();
             user.setUsername(email);
             user.setEncryptedPassword(passwordEncoder.encode(password));
-        return repository.save(user);
+        var cachedUser = repository.save(user);
+        userRoleService.addRoleForUser(cachedUser.getUuid(), "USER");
+
+        return cachedUser;
     }
 
 
