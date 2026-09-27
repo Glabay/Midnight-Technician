@@ -4,6 +4,7 @@ import dev.midnightcoder.common.nto.RegistrationCreationEvent;
 import dev.midnightcoder.identity.IUserDetailsService;
 import dev.midnightcoder.identity.profile.IUserProfileService;
 import dev.midnightcoder.website.registrar.RegistrationRequest;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -17,25 +18,17 @@ import org.springframework.stereotype.Component;
  * @since 2026-09-24
  */
 @Component
+@RequiredArgsConstructor
 public class Registrar {
     private final Logger log = LoggerFactory.getLogger(Registrar.class);
     private final IUserDetailsService userService;
     private final IUserProfileService profileService;
     private final ApplicationEventPublisher eventPublisher;
 
-    Registrar(IUserDetailsService userService,
-              IUserProfileService profileService,
-              ApplicationEventPublisher eventPublisher
-    ) {
-        this.userService = userService;
-        this.profileService = profileService;
-        this.eventPublisher = eventPublisher;
-    }
-
     public RegistrationStatus registerUser(RegistrationRequest request, String ipAddress) {
-        if (userService.userExists(request.email())) {
+        if (userService.userExists(request.email()))
             return RegistrationStatus.ALREADY_EXISTS;
-        }
+
         if (!request.password().isBlank() &&
             !request.password().equals(request.rePassword())
         ) return RegistrationStatus.FAILED;
