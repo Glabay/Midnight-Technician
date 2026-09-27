@@ -1,18 +1,24 @@
 package dev.midnightcoder.website.auth;
 
+import dev.midnightcoder.website.jwt.JwtService;
 import dev.midnightcoder.website.registrar.internal.Registrar;
 import dev.midnightcoder.website.registrar.RegistrationRequest;
+import dev.midnightcoder.website.security.CookieHelper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.util.stream.Collectors;
 
 /**
  * @author Glabay | The Midnight Coder
@@ -22,13 +28,11 @@ import java.io.IOException;
  * @since 2026-09-24
  */
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/auth")
 public class AuthController {
     private final Registrar registrar;
-
-    public AuthController(Registrar registrar) {
-        this.registrar = registrar;
-    }
+    private final AuthService authService;
 
     @PostMapping("/register")
     public ResponseEntity<String> registerNewUser(
@@ -56,6 +60,27 @@ public class AuthController {
                 .body(e.getMessage());
         }
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping(
+        value = "/login",
+        consumes = {
+            MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+            MediaType.APPLICATION_JSON_VALUE
+        }
+    )
+    public ResponseEntity<Void> performLogin(
+        HttpServletRequest request,
+        HttpServletResponse response,
+        @RequestParam("email") String email,
+        @RequestParam("password") String password
+    ) {
+        return authService.handleLoginAttempt(
+            request,
+            response,
+            email,
+            password
+        );
     }
 
 }

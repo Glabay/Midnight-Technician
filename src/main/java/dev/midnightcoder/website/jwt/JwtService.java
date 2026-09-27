@@ -1,14 +1,17 @@
 package dev.midnightcoder.website.jwt;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.Keys;
+import lombok.Getter;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.security.Key;
+import javax.crypto.SecretKey;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -25,9 +28,9 @@ import java.util.*;
 public class JwtService {
     private final String issuer;
     private final String audience;
-    private final int accessTtlMinutes;
-    private final long clockSkewSeconds;
-    private final Key signingKey;
+    @Getter private final int accessTtlMinutes;
+    private final SecretKey signingKey;
+    private final JwtParser parser;
 
     public JwtService(
         @Value("${jwt.issuer}") String issuer,
@@ -39,12 +42,25 @@ public class JwtService {
         this.issuer = issuer;
         this.audience = audience;
         this.accessTtlMinutes = accessTtlMinutes;
-        this.clockSkewSeconds = clockSkewSeconds;
-        if (secret.isBlank()) {
-            throw new IllegalStateException("JWT secret is not configured. Set jwt.secret or JWT_SECRET env var.");
+        if (issuer == null || issuer.isBlank() || audience == null || audience.isBlank()
+            || accessTtlMinutes <= 0 || clockSkewSeconds < 0)
+            throw new IllegalStateException("Invalid JWT issuer, audience, TTL or clock skew configuration");
+        this.signingKey = signingKey(secret);
+        this.parser = Jwts.parser().verifyWith(signingKey)
+            .requireIssuer(issuer).requireAudience(audience)
+            .clockSkewSeconds(clockSkewSeconds).build();
+    }
+
+    private SecretKey signingKey(String secret) {
+        if (secret == null || secret.isBlank()
+            || secret.equals("changeItAsSoonAsPossibleBeforeProductionOrAnythingReallyThisIsNotGood"))
+            throw new IllegalStateException("Configure an external Base64 JWT signing key");
+        try {
+            return Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret));
         }
-        byte[] keyBytes = Decoders.BASE64.decode(secret.trim());
-        this.signingKey = Keys.hmacShaKeyFor(keyBytes);
+        catch (IllegalArgumentException | io.jsonwebtoken.security.WeakKeyException e) {
+            throw new IllegalStateException("JWT signing key must be valid Base64 with at least 256 bits");
+        }
     }
 
     public String generateAccessToken(String subject, Collection<String> roles) {
@@ -69,42 +85,35 @@ public class JwtService {
 
     public boolean isTokenValid(String token) {
         try {
-            var jws = Jwts.parser()
-                .requireIssuer(issuer)
-                .requireAudience(audience)
-                .clockSkewSeconds(clockSkewSeconds)
-                .setSigningKey(signingKey)
-                .build()
-                .parseSignedClaims(token);
-            // Exp is checked by the parser; additional custom checks can go here.
-            return jws != null;
+            parseClaims(token);
+            return true;
         }
-        catch (Exception e) {
+        catch (JwtException | IllegalArgumentException e) {
             return false;
         }
     }
 
     public Claims parseClaims(String token) {
-        return Jwts.parser()
-            .requireIssuer(issuer)
-            .requireAudience(audience)
-            .clockSkewSeconds(clockSkewSeconds)
-            .setSigningKey(signingKey)
-            .build()
-            .parseSignedClaims(token)
-            .getPayload();
+        if (token == null || token.isBlank())
+            throw new MalformedJwtException("Access token is missing");
+        var claims = parser.parseSignedClaims(token).getPayload();
+        if (claims.getExpiration() == null || claims.getSubject() == null || claims.getSubject().isBlank())
+            throw new MalformedJwtException("Access token requires expiration and subject");
+        extractRoles(claims);
+        return claims;
     }
 
     public List<String> extractRoles(Claims claims) {
         var raw = claims.get("roles");
         if (raw instanceof List<?> list) {
             var roles = new ArrayList<String>();
-            for (var o : list)
-                roles.add(o.toString());
-            return roles;
+            for (var value : list) {
+                if (!(value instanceof String role) || role.isBlank())
+                    throw new MalformedJwtException("Invalid authority claim");
+                roles.add(role);
+            }
+            return List.copyOf(roles);
         }
-        if (raw instanceof String s)
-            return Arrays.asList(s.split(","));
-        return Collections.emptyList();
+        throw new MalformedJwtException("Access token requires an authority list");
     }
 }

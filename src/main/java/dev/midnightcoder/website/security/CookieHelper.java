@@ -27,14 +27,17 @@ public class CookieHelper {
     private final String cookieDomain;
 
     public CookieHelper(
-        @Value("${security.cookies.secure}") boolean secureCookies,
-        @Value("${security.cookies.domain}") String cookieDomain
+        @Value("${security.cookies.secure:true}") boolean secureCookies,
+        @Value("${security.cookies.domain:}") String cookieDomain
     ) {
         this.secureCookies = secureCookies;
         this.cookieDomain = (cookieDomain == null ||
                              cookieDomain.isBlank())
             ? null
             : cookieDomain;
+        if (this.cookieDomain != null && !this.cookieDomain.matches(
+            "(?=.{1,253}$)\\.?[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)*"))
+            throw new IllegalArgumentException("Cookie domain must be a hostname, not a URL or host with port");
     }
 
 

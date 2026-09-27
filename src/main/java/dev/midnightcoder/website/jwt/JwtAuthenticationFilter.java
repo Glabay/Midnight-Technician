@@ -1,5 +1,8 @@
 package dev.midnightcoder.website.jwt;
 
+import dev.midnightcoder.website.security.CookieHelper;
+import io.jsonwebtoken.JwtException;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -29,16 +32,10 @@ import java.util.Arrays;
 @NullMarked
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
-    private final String ACCESS_COOKIE = "mt_access";
     private final JwtService jwtService;
 
     JwtAuthenticationFilter(JwtService jwtService) {
         this.jwtService = jwtService;
-    }
-
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
-        return request.getRequestURI().startsWith("/auth/");
     }
 
     @Override
@@ -49,13 +46,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
         var token = extractCookie(request);
         if (token.isBlank() ||
-            SecurityContextHolder.getContext().getAuthentication() == null
+            SecurityContextHolder.getContext().getAuthentication() != null
         ) {
-            log.debug("No token or no authentication");
             filterChain.doFilter(request, response);
             return;
         }
-        if (jwtService.isTokenValid(token)) {
+        try {
             var claims = jwtService.parseClaims(token);
             var principal = claims.getSubject();
             var roles = jwtService.extractRoles(claims);
@@ -66,6 +62,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
+        catch (JwtException | IllegalArgumentException e) {
+            log.debug("Rejected invalid access cookie");
+        }
         filterChain.doFilter(request, response);
     }
 
@@ -73,7 +72,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         var cookies = request.getCookies();
         if (cookies == null) return "";
         return Arrays.stream(cookies)
-            .filter(c -> ACCESS_COOKIE.equals(c.getName()))
+            .filter(c -> CookieHelper.ACCESS_COOKIE.equals(c.getName()))
             .findFirst()
             .map(Cookie::getValue)
             .orElse("");
