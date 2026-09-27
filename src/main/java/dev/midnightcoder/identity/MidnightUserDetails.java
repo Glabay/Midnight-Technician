@@ -36,7 +36,7 @@ public class MidnightUserDetails implements UserDetails {
     public Collection<? extends GrantedAuthority> getAuthorities() {
         log.debug("Retrieving authorities for user: {}", user.getUsername());
         return roles.stream()
-            .map(role -> new SimpleGrantedAuthority(role.getRoleName()))
+            .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getRoleName()))
             .toList();
     }
 
