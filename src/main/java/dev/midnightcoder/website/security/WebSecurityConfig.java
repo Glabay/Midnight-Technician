@@ -59,6 +59,8 @@ public class WebSecurityConfig implements WebMvcConfigurer {
                 .requestMatchers(
                     "/",
                     "/home",
+                    "/login",
+                    "/register",
                     "/index",
                     "/error",
                     "/auth/**"
@@ -69,6 +71,8 @@ public class WebSecurityConfig implements WebMvcConfigurer {
                 .requestMatchers(
                     "/api/**"
                 ).authenticated()
+                .requestMatchers("/dashboard/**").hasRole("USER")
+                .requestMatchers("/api/**").authenticated()
                 .anyRequest().authenticated()
             )
             .exceptionHandling(exception ->
