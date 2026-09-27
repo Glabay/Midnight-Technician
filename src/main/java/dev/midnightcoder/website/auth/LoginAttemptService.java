@@ -29,9 +29,9 @@ public class LoginAttemptService {
     private final ConcurrentMap<String, Entry> attempts = new ConcurrentHashMap<>();
 
     public LoginAttemptService(
-        @Value("${security.login.max-attempts:${SECURITY_LOGIN_MAX_ATTEMPTS:3}}") int maxAttempts,
-        @Value("${security.login.lock-minutes:${SECURITY_LOGIN_LOCK_MINUTES:5}}") int lockMinutes,
-        @Value("${security.login.use-ip:false}") boolean useIpFactor
+        @Value("${security.login.max-attempts}") int maxAttempts,
+        @Value("${security.login.lock-minutes}") int lockMinutes,
+        @Value("${security.login.use-ip}") boolean useIpFactor
     ) {
         this.maxAttempts = Math.max(1, maxAttempts);
         this.lockoutDuration = Duration.ofMinutes(Math.max(1, lockMinutes));
