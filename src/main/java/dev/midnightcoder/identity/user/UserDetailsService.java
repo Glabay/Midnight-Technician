@@ -1,6 +1,7 @@
 package dev.midnightcoder.identity.user;
 
 import dev.midnightcoder.identity.IUserDetailsService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -15,14 +16,11 @@ import java.util.Optional;
  * @since 2026-09-23
  */
 @Service
+@RequiredArgsConstructor
 public class UserDetailsService implements IUserDetailsService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final UserRepository repository;
 
-    UserDetailsService(BCryptPasswordEncoder passwordEncoder, UserRepository repository) {
-        this.passwordEncoder = passwordEncoder;
-        this.repository = repository;
-    }
 
     @Override
     public boolean userExists(String username) {
