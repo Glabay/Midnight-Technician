@@ -54,24 +54,22 @@ class AuthService {
     ) {
         var ip = request.getRemoteAddr();
         if (loginAttemptService.isLocked(email, ip)) {
-            return ResponseEntity
-                .status(HttpStatus.LOCKED)
+            return ResponseEntity.status(HttpStatus.LOCKED)
                 .build(); // Locked
         }
         var user = userDetailsService.loadUserByUsername(email);
-        if (!passwordEncoder.matches(password, user.getPassword())) {
+        if (! passwordEncoder.matches(password, user.getPassword())) {
             loginAttemptService.onFailure(email, ip);
-            return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .build();
         }
         loginAttemptService.onSuccess(email, ip);
-        var roles = user.getAuthorities().stream()
+        var roles = user.getAuthorities()
+            .stream()
             .map(GrantedAuthority::getAuthority)
             .toList();
         var accessToken = jwtService.generateAccessToken(
-            email,
-            roles.isEmpty()
+            email, roles.isEmpty()
                 ? List.of()
                 : roles
         );
@@ -83,7 +81,8 @@ class AuthService {
                 .header("Location", destinationForRoles(roles))
                 .build();
         }
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.noContent()
+            .build();
     }
 
     private boolean isFormLike(HttpServletRequest request) {
