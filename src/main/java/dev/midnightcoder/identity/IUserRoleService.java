@@ -14,4 +14,6 @@ import java.util.UUID;
  */
 public interface IUserRoleService {
     List<Role> getRolesForUserId(UUID uuid);
+
+    void addRoleForUser(UUID uuid, String user);
 }

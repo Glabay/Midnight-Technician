@@ -22,6 +22,14 @@ public class UserRoleService implements IUserRoleService {
     }
 
     @Override
+    public void addRoleForUser(UUID uuid, String roleName) {
+        var role = new Role();
+            role.setOwnerId(uuid);
+            role.setRoleName(roleName);
+        repository.save(role);
+    }
+
+    @Override
     public List<Role> getRolesForUserId(UUID uuid) {
         return repository.findByOwnerId(uuid);
     }
