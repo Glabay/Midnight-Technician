@@ -1,6 +1,8 @@
 package dev.midnightcoder.identity.roles;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -13,6 +15,7 @@ import java.util.UUID;
  * @since 2026-09-23
  */
 @Entity
+@Getter @Setter
 @Table(name = "user_roles")
 public class Role {
     @Id
